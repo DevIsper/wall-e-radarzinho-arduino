@@ -15,8 +15,12 @@ public class DistanciaServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        resp.setContentType("text/plain");
+        serial.lerLeitura();
+        resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
-        resp.getWriter().write(String.valueOf(serial.lerDistancia()));
+        resp.getWriter().write(
+            "{\"grau\":" + serial.getLastGrau() +
+            ",\"dist\":" + serial.getLastDistancia() + "}"
+        );
     }
 }

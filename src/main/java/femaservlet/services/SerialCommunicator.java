@@ -27,21 +27,28 @@ public class SerialCommunicator {
 	private BufferedReader reader;
 	private boolean isConnected = false;
 	private float lastDistancia = 0.0f;
+	private int lastGrau = 0;
 
-	public float lerDistancia() {
-		if (!isConnected || serialPort == null) return lastDistancia;
+	// lê uma linha "grau,distancia" e atualiza os campos internos
+	public void lerLeitura() {
+		if (!isConnected || serialPort == null) return;
 		try {
 			String line = reader.readLine();
-			if (line != null && !line.isBlank()) {
-				lastDistancia = Float.parseFloat(line.trim());
+			if (line == null || line.isBlank()) return;
+			String[] parts = line.trim().split(",");
+			if (parts.length == 2) {
+				lastGrau      = Integer.parseInt(parts[0].trim());
+				lastDistancia = Float.parseFloat(parts[1].trim());
 			}
 		} catch (SerialPortTimeoutException e) {
-			// sem dado novo, retorna o último valor conhecido
+			// sem dado novo — mantém último valor
 		} catch (IOException | NumberFormatException e) {
 			System.err.println("Erro na leitura serial: " + e.getMessage());
 		}
-		return lastDistancia;
 	}
+
+	public float getLastDistancia() { return lastDistancia; }
+	public int   getLastGrau()      { return lastGrau; }
 	
 	// "COM3", 9600
 	public boolean connect(String portName, int baudRate) {
