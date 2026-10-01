@@ -165,29 +165,44 @@
         const now = Date.now();
         detections = detections.filter(d => now - d.time < TRAIL_MS);
 
+        // rastro: pontos antigos com fade
         detections.forEach(det => {
-            const age   = (now - det.time) / TRAIL_MS;
-            const alpha = Math.pow(1 - age, 1.5);
-            const pos   = toXY(det.grau, det.dist);
+            const age = (now - det.time) / TRAIL_MS;
+            const alpha = Math.pow(1 - age, 2);
+            const pos = toXY(det.grau, det.dist);
 
-            // halo exterior
             ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 9, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(0,255,65,${alpha * 0.12})`;
-            ctx.fill();
-
-            // halo interior
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(0,255,65,${alpha * 0.3})`;
-            ctx.fill();
-
-            // ponto central
-            ctx.beginPath();
-            ctx.arc(pos.x, pos.y, 2.5, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(0,255,65,${alpha})`;
+            ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(0,255,65,${alpha * 0.5})`;
             ctx.fill();
         });
+
+        // bolinha principal: detecção mais recente, grande e brilhante
+        if (detections.length > 0) {
+            const latest = detections[detections.length - 1];
+            const pos = toXY(latest.grau, latest.dist);
+
+            // halo externo
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 18, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,255,65,0.07)';
+            ctx.fill();
+
+            // halo médio
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 11, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,255,65,0.18)';
+            ctx.fill();
+
+            // bolinha sólida
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#00ff41';
+            ctx.shadowColor = '#00ff41';
+            ctx.shadowBlur  = 14;
+            ctx.fill();
+            ctx.shadowBlur  = 0;
+        }
     }
 
     function drawOrigin() {
@@ -207,8 +222,8 @@
         ctx.fillRect(0, 0, W, H);
 
         drawGrid();
-        drawDetections();
         drawSweep(sweepGrau);
+        drawDetections();   // detecções por cima da linha de varredura
         drawOrigin();
     }
 
