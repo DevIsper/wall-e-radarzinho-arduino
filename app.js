@@ -7,14 +7,10 @@ const maxDistance = 100;
 const radius = canvas.width / 2;
 const beamAngle = -Math.PI / 2; // feixe fixo apontando para cima
 
-async function pollDistance() {
-  try {
-    const result = await webui.call("getDistance");
-    distance = parseFloat(result);
-  } catch (_) {}
-  setTimeout(pollDistance, 100);
-}
-pollDistance();
+const source = new EventSource("/events");
+source.onmessage = (e) => {
+  distance = parseFloat(e.data);
+};
 
 function drawRadarGrid() {
   ctx.strokeStyle = "rgba(0,255,0,.3)";
