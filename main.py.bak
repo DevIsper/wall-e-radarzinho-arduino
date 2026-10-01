@@ -1,0 +1,66 @@
+import os
+import json
+import time
+import threading
+
+import serial
+import serial.tools.list_ports
+from webui import webui
+
+# ---------------- Configuração ----------------
+SERIAL_PORT = None      # ex: "COM3" ou "/dev/ttyACM0". None = autodetectar
+BAUD_RATE = 115200
+HTML_FILE = "index.html"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# ----------------------------------------------
+
+window = webui.Window()
+window.set_root_folder(BASE_DIR)
+
+
+def find_arduino_port():
+    for p in serial.tools.list_ports.comports():
+        desc = f"{p.description} {p.manufacturer}".lower()
+        if "arduino" in desc or "usb serial" in desc or "ch340" in desc:
+            return p.device
+    ports = list(serial.tools.list_ports.comports())
+    return ports[0].device if ports else None
+
+
+def send_to_page(distance):
+    payload = json.dumps({"distance": distance})
+    window.run(
+        f"window.dispatchEvent(new CustomEvent('radar_update', {{detail: {payload}}}));"
+    )
+
+
+def radar_loop():
+    while True:
+        port = SERIAL_PORT or find_arduino_port()
+        if not port:
+            print("Nenhuma porta serial encontrada, tentando de novo...")
+            time.sleep(2)
+            continue
+
+        try:
+            with serial.Serial(port, BAUD_RATE, timeout=1) as ser:
+                print(f"Conectado em {port}")
+                time.sleep(2)  # o Arduino reinicia ao abrir a serial
+                ser.reset_input_buffer()
+
+                while True:
+                    line = ser.readline().decode("utf-8", errors="ignore").strip()
+                    print(line)
+                    try:
+                        send_to_page(float(line))
+                    except ValueError:
+                        pass  # linha corrompida, ignora
+        except serial.SerialException as e:
+            print(f"Erro serial: {e}. Reconectando...")
+            time.sleep(2)
+
+
+threading.Thread(target=radar_loop, daemon=True).start()
+
+window.show(HTML_FILE)
+webui.wait()
