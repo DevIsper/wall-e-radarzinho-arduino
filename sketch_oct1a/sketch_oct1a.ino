@@ -2,6 +2,7 @@
 #define ECHO_PIN 10
 #define SERVO_PIN 6
 #define BUZZER 2
+#define LED_PIN 4
 
 #include <Servo.h>
 
@@ -10,13 +11,19 @@ Servo myServo;
 int grauServo = 0;
 int direcao = 1; // 1 = crescente, -1 = decrescente
 
+// LED "gravando": pisca lentamente, sem depender do sensor
+const unsigned long LED_INTERVALO = 800; // ms aceso / ms apagado
+unsigned long ultimoPisca = 0;
+bool ledLigado = false;
+
 void setup() {
   myServo.attach(SERVO_PIN);
   delay(100);
   Serial.begin(9600);
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
-  pinMode(BUZZER,OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
 }
 
 void loop() {
@@ -25,25 +32,32 @@ void loop() {
 
   float dist = readDistance();
 
-  if(dist <= 15 && dist > 10) {
+  // -1 significa "sem eco" (nada à frente): não pode disparar os sons
+  bool valida = dist > 0;
+
+  atualizaLedGravando();
+
+  if (valida && dist <= 15 && dist > 10) {
     // curioso
     rasp(300, 520, 140);
     delay(70);
     rasp(380, 850, 220);
-  } else if (dist <= 10 && dist > 5) {
+  } else if (valida && dist <= 10 && dist > 5) {
     // animado
     rasp(380, 760, 90);
     delay(35);
     rasp(500, 880, 90);
     delay(35);
     rasp(620, 1000, 90);
-  } else if (dist <= 5) {
+  } else if (valida && dist <= 5) {
     // "EEEVAAH!"
     rasp(500, 1000, 260);
     rasp(1000, 620, 220);
-  } else noTone(BUZZER);
+  } else {
+    noTone(BUZZER);
+  }
 
-  if (dist > 0 && dist <= 400) {
+  if (valida && dist <= 400) {
     Serial.print(grauServo);
     Serial.print(",");
     Serial.println(dist, 1);
@@ -75,4 +89,15 @@ void rasp(int f1, int f2, int ms) {
     delay(8);
   }
   noTone(BUZZER);
+}
+
+// Alterna o LED a cada LED_INTERVALO ms usando millis(),
+// para não travar o loop com delay()
+void atualizaLedGravando() {
+  unsigned long agora = millis();
+  if (agora - ultimoPisca >= LED_INTERVALO) {
+    ultimoPisca = agora;
+    ledLigado = !ledLigado;
+    digitalWrite(LED_PIN, ledLigado ? HIGH : LOW);
+  }
 }
