@@ -1,8 +1,8 @@
-#define TRIG_PIN 9
-#define ECHO_PIN 10
-#define SERVO_PIN 6
+#define ECHO_PIN 6
+#define TRIG_PIN 5
+#define SERVO_PIN 4
+#define LED_PIN 3
 #define BUZZER 2
-#define LED_PIN 4
 
 #include <Servo.h>
 
